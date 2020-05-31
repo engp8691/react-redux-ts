@@ -60,6 +60,7 @@ const selectUserEventsSate = (rootState: RootState) => rootState.userevents;
 
 export const selectUserEventsArray = (rootState: RootState) => {
     const state = selectUserEventsSate(rootState);
+    console.log(state);
     return state.allIds.map(id => state.byIds[id]);
 }
 
@@ -77,7 +78,7 @@ const userEventReducer = (
             const { events } = action.payload;
             return {
                 ...state,
-                allids: events.map(({ id }) => id),
+                allIds: events.map(({ id }) => id),
                 byIds: events.reduce<UserEventState['byIds']>((byIds, event) => {
                     byIds[event.id] = event;
                     return byIds;
