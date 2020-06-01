@@ -1,6 +1,7 @@
-import { AnyAction, Action } from "redux";
+import { Action } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "./store";
+import { selectDateStart } from "./recorderReducer";
 
 export interface UserEvent {
     id: number,
@@ -56,6 +57,64 @@ export const loadUserEvents = (): ThunkAction<
     }
 };
 
+const CREATE_REQUEST = 'userEvents/create_request';
+interface CreateRequestAction extends Action<typeof CREATE_REQUEST> { }
+
+const CREATE_SUCCESS = 'userEvents/create_success';
+interface CreateSuccessAction extends Action<typeof CREATE_SUCCESS> {
+    payload: {
+        event: UserEvent
+    }
+}
+
+const CREATE_FAILURE = 'userEvents/create_failure';
+interface CreateFailureAction extends Action<typeof CREATE_FAILURE> { }
+
+export const createUserEvent = (): ThunkAction<
+    Promise<void>,
+    RootState,
+    undefined,
+    CreateRequestAction | CreateSuccessAction | CreateFailureAction
+> => async (dispatch, getState) => {
+    dispatch({
+        type: CREATE_REQUEST
+    });
+
+    try {
+        const dateStart = selectDateStart(getState());
+        const event: Omit<UserEvent, 'id'> = {
+            title: "No Name",
+            dateStart,
+            dateEnd: new Date().toISOString()
+        }
+
+        const response = await fetch('http://localhost:3001/events', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(event)
+        });
+
+        const createdEvent: UserEvent = await response.json();
+
+        dispatch({
+            type: CREATE_SUCCESS,
+            payload: {
+                event: createdEvent
+            }
+        })
+    } catch (e) {
+        dispatch({
+            type: CREATE_FAILURE
+        })
+    }
+
+
+}
+
+
+
 const selectUserEventsSate = (rootState: RootState) => rootState.userevents;
 
 export const selectUserEventsArray = (rootState: RootState) => {
@@ -71,7 +130,7 @@ const initialState: UserEventState = {
 
 const userEventReducer = (
     state: UserEventState = initialState,
-    action: LoadSuccessAction | LoadRequestAction | LoadFailueAction
+    action: LoadSuccessAction | LoadRequestAction | LoadFailueAction | CreateSuccessAction
 ) => {
     switch (action.type) {
         case LOAD_SUCCESS:
@@ -84,6 +143,16 @@ const userEventReducer = (
                     return byIds;
                 }, {})
             };
+
+        case CREATE_SUCCESS:
+            const { event } = action.payload;
+
+            return {
+                ...state,
+                allIds: [...state.allIds, event.id],
+                byIds: { ...state.byIds, [event.id]: event }
+            }
+
         default:
             return state;
     }
