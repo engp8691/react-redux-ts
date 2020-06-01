@@ -126,7 +126,6 @@ interface DeleteSuccessAction extends Action<typeof DELETE_SUCCESS> {
     }
 }
 
-
 const DELETE_FAILURE = 'userEvents/delete_failure';
 
 interface DeleteFailureAction extends Action<typeof DELETE_FAILURE> { }
@@ -161,6 +160,48 @@ export const deleteUserEvent = (
     }
 }
 
+const UPDATE_REQUEST = 'userEvents/update_request';
+interface UpdateRequestAction extends Action<typeof UPDATE_REQUEST> { }
+
+const UPDATE_SUCCESS = 'userEvents/update_success';
+interface UpdateSuccessAction extends Action<typeof UPDATE_SUCCESS> {
+    payload: { event: UserEvent }
+}
+const UPDATE_FAILURE = 'userEvents/update_failure';
+interface UpdateFailureAction extends Action<typeof UPDATE_FAILURE> { }
+
+export const updateUserEvent = (event: UserEvent): ThunkAction<
+    Promise<void>,
+    RootState,
+    undefined,
+    UpdateRequestAction | UpdateSuccessAction | UpdateFailureAction
+> => async dispatch => {
+    dispatch({
+        type: UPDATE_REQUEST
+    });
+
+    try {
+        const response = await fetch(`http://localhost:3001/events/${event.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(event)
+        });
+
+        const updatedEvent: UserEvent = await response.json();
+
+        dispatch({
+            type: UPDATE_SUCCESS,
+            payload: { event: updatedEvent }
+        });
+    } catch (e) {
+        dispatch({
+            type: UPDATE_FAILURE
+        })
+    }
+}
+
 const selectUserEventsSate = (rootState: RootState) => rootState.userevents;
 
 export const selectUserEventsArray = (rootState: RootState) => {
@@ -176,7 +217,14 @@ const initialState: UserEventState = {
 
 const userEventReducer = (
     state: UserEventState = initialState,
-    action: LoadSuccessAction | LoadRequestAction | LoadFailueAction | CreateSuccessAction | DeleteSuccessAction
+    action: LoadSuccessAction
+        | LoadRequestAction
+        | LoadFailueAction
+        | CreateSuccessAction
+        | DeleteSuccessAction
+        | UpdateRequestAction
+        | UpdateSuccessAction
+        | UpdateFailureAction
 ) => {
     switch (action.type) {
         case LOAD_SUCCESS:
@@ -198,18 +246,26 @@ const userEventReducer = (
                 allIds: [...state.allIds, event.id],
                 byIds: { ...state.byIds, [event.id]: event }
             }
-    
+
         case DELETE_SUCCESS:
-            const {id} = action.payload;
+            const { id } = action.payload;
             const newState = {
                 ...state,
-                byIds: {...state.byIds},
-                allIds: state.allIds.filter(storedId=> storedId !== id)
+                byIds: { ...state.byIds },
+                allIds: state.allIds.filter(storedId => storedId !== id)
             }
             delete newState.byIds[id];
-           
+
             return newState;
-            
+
+        case UPDATE_SUCCESS:
+            const { event: updatedEvent } = action.payload;
+
+            return {
+                ...state,
+                byIds: { ...state.byIds, [updatedEvent.id]: updatedEvent }
+            };
+
         default:
             return state;
     }
