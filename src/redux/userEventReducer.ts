@@ -110,16 +110,12 @@ export const createUserEvent = (): ThunkAction<
             type: CREATE_FAILURE
         })
     }
-
-
 }
 
 const DELETE_REQUEST = 'userEvents/delete_request';
-
 interface DeleteRequestAction extends Action<typeof DELETE_REQUEST> { }
 
 const DELETE_SUCCESS = 'userEvents/delete_success';
-
 interface DeleteSuccessAction extends Action<typeof DELETE_SUCCESS> {
     payload: {
         id: UserEvent['id']
@@ -127,7 +123,6 @@ interface DeleteSuccessAction extends Action<typeof DELETE_SUCCESS> {
 }
 
 const DELETE_FAILURE = 'userEvents/delete_failure';
-
 interface DeleteFailureAction extends Action<typeof DELETE_FAILURE> { }
 
 export const deleteUserEvent = (
